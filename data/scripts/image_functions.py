@@ -4,7 +4,7 @@ color_key = (0, 0, 0)
 
 def load_image(path, alpha = 255):
     path = "data/images/" + path
-    image = pygame.image.load(path).convert()
+    image = pygame.image.load(path)
     image.set_colorkey(color_key)
     image.set_alpha(alpha)
     return image

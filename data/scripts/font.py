@@ -1,10 +1,11 @@
 import pygame
+
 from data.scripts.image_functions import load_image, swap_color, scale_image_ratio, clip_surface
 
 class Font():
     def __init__(self, path, color = (255, 0, 0), size_ratio = 1):
         self.size_ratio = size_ratio
-        self.image = load_image('fonts/' + path, )
+        self.image = load_image('fonts/' + path)
         self.image = swap_color(self.image, (255, 0, 0), color)
         self.image_size = [self.image.get_width(), self.image.get_height()]
         self.image = scale_image_ratio(self.image, size_ratio)
@@ -30,17 +31,6 @@ class Font():
             else:
                 self.image_x_size += 1
 
-    def get_width(self, string, text_spacing = 3):
-        width = 0
-
-        for character in string:
-            if character == ' ':
-                width += 5 * self.size_ratio
-            else:
-                width += self.image_character_dict[character][1] + text_spacing
-
-        return width
-
     def display_fonts(self, surface, string, pos, text_spacing = 3):
         for character in string:
             if character == ' ':
@@ -48,3 +38,28 @@ class Font():
             else:
                 surface.blit(self.image_character_dict[character][0], pos)
                 pos[0] += self.image_character_dict[character][1] + text_spacing
+
+    def display_masked_fonts(self, surface, string, pos, text_spacing=3):
+        for character in string:
+            if character == ' ':
+                pos[0] += 5 * self.size_ratio
+                continue
+
+            char_img = self.image_character_dict[character][0]
+            char_width = self.image_character_dict[character][1]
+
+            # Create mask for character
+            mask = pygame.mask.from_surface(char_img)
+            outline = mask.outline()
+
+            # Create black border surface
+            border_surface = pygame.Surface(char_img.get_size(), pygame.SRCALPHA)
+            for x, y in outline:
+                border_surface.set_at((x, y), (0, 0, 0, 255))
+
+            # Blit border first
+            surface.blit(border_surface, pos)
+            # Blit actual character on top
+            surface.blit(char_img, pos)
+
+            pos[0] += char_width + text_spacing
