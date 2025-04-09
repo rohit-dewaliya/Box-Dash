@@ -3,7 +3,7 @@ from pygame.locals import *
 
 from data.scripts.clock import Clock
 from data.scripts.font import Font
-from data.scripts.image_functions import load_image, scale_image_ratio
+from data.scripts.image_functions import load_image, scale_image_ratio, scale_image_size
 from data.scripts.border import Border
 from data.scripts.player import Player
 from data.scripts.background import Background
@@ -33,6 +33,9 @@ class Game:
             load_image('space_key.png'): "Change arrow rotating direction",
             load_image('left_button.png'): "Shoot the player"
         }
+
+        self.white_background = load_image('white_background.png', 100)
+        self.black_background = load_image('black_background.png', 100)
 
 
         # Fonts-----------------------------#
@@ -66,6 +69,11 @@ class Game:
         # Text----------------#
         self.score_font = Font('small_font.png', (255, 255, 255), 4)
         self.instructions_font = Font('small_font.png', (255, 255, 255), 3)
+        self.game_heading_1 = Font('large_font.png', (255, 255, 255), 10)
+        self.game_heading_2 = Font('large_font.png', (255, 0, 0), 10)
+        self.high_score_font = Font('large_font.png', (1, 0, 0), 7)
+        self.score_font = Font('small_font.png', (255, 255, 255), 6)
+        self.play_font = Font('small_font.png', (1, 0, 0), 4)
 
         self.score = 0
 
@@ -73,9 +81,70 @@ class Game:
         player_pos = [self.border.offset[0] + self.border.height + radius, self.size[1] // 2]
         self.player = Player(*player_pos, radius)
 
-        self.instruction = eval(read_json('data.txt'))
-        if self.instruction:
-            write_json('data.txt', 'False')
+        self.data = read_json('data.txt')
+        self.data = self.data.split('\n')
+        self.instruction, self.high_score = eval(self.data[0]), eval(self.data[1])
+
+        self.game_over = False
+
+    def start_screen(self):
+        game = True
+        _x = 10
+        speed = -1
+        hover = False
+        while game:
+            mouse_pos = pygame.mouse.get_pos()
+
+            self.background.display(self.screen)
+
+            x = self.game_heading_1.get_width('Box Dash', 3)
+
+            self.screen.blit(scale_image_size(self.white_background, x + 50, self.game_heading_1.image_height),
+                             ((self.size[0] - x) // 2 - 25, 0))
+            self.game_heading_1.display_fonts(self.screen, "Box Dash", [(self.size[0] - x) // 2, 10], 3)
+
+            if _x < -10 or _x > 10:
+                speed *= -1
+
+            self.game_heading_2.display_fonts(self.screen, "Box Dash", [int((self.size[0] - x)) // 2 + _x, 10], 3)
+
+            _x -= speed * 0.4
+
+            high_score_x = self.high_score_font.get_width(f'{self.high_score}', 3)
+            self.high_score_font.display_fonts(self.screen, f'{self.high_score}', [(self.size[0] - high_score_x) //
+                                                                                   2, 180], 3)
+
+            score_x = self.score_font.get_width(f'Score {self.score}', 3)
+            self.score_font.display_fonts(self.screen, f'Score {self.score}', [(self.size[0] - score_x) //
+                                                                                   2, 270], 3)
+
+            play_x = self.play_font.get_width('Play', 3)
+
+            background = None
+            if ((self.size[0] - play_x) // 2 - 50 < mouse_pos[0] < (self.size[0] - play_x) // 2 + 110 and 390 <
+                    mouse_pos[1] < 390 + self.play_font.image_height + 20):
+                background = self.black_background
+                hover = True
+            else:
+                background = self.white_background
+                hover = False
+
+            self.screen.blit(scale_image_size(background, play_x + 100, self.play_font.image_height + 20),
+                             [(self.size[0] - play_x) // 2 - 50, 390])
+            self.play_font.display_fonts(self.screen, 'Play', [(self.size[0] - play_x) // 2, 400])
+
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    game = False
+                    self._game = False
+
+                if event.type == MOUSEBUTTONDOWN:
+                    if event.button == 1:
+                        if hover:
+                            game = False
+
+            pygame.display.update()
+            self.clock.tick()
 
     def main(self):
         while self._game:
@@ -97,6 +166,8 @@ class Game:
                                                                       y + image.get_height() // 2])
                     y += image.get_height() + 50
             else:
+                self.high_score = max(self.high_score, self.score)
+
                 food_captured = self.player.display(self.screen, self.food.rect, self.platforms)
 
                 if food_captured:
@@ -105,7 +176,10 @@ class Game:
 
                 self.food.display(self.screen)
 
-                self.score_font.display_masked_fonts(self.screen, f'Score: {self.score}', [10, 10], 2)
+                self.score_font.display_fonts(self.screen, f'Score: {self.score}', [10, 10], 2)
+
+                if self.game_over:
+                    self.start_screen()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -131,4 +205,7 @@ class Game:
 
 if __name__ == "__main__":
     game = Game()
+    game.start_screen()
     game.main()
+    print(game.instruction, game.high_score)
+    write_json('data.txt', f'True\n{game.high_score}')
