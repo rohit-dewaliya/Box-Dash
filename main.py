@@ -44,14 +44,14 @@ class Game:
         self.score_fonts = Font('small_font.png', (255, 255, 255), 2)
 
         # Music-----------------------------#
-        # self.jump = load_sound('jump.wav')
-        #
-        # pygame.mixer.music.load('data/sounds/background music.mp3')
-        # pygame.mixer.music.play(-1)
-        # pygame.mixer.music.set_volume(0.4)
+        self.burst = load_sound('burst.wav')
+        self.buttonclick = load_sound('buttonclick.wav')
+        self.ballbounce = load_sound('ballbounce.wav')
 
-        # self.score = 0
-        # self.highest_score = 0
+        pygame.mixer.music.load('data/sounds/background music.mp3')
+        pygame.mixer.music.play(-1)
+        pygame.mixer.music.set_volume(0.4)
+
         self.clock = Clock(30)
         self._game = True
         self.game_start = False
@@ -103,7 +103,6 @@ class Game:
         _x = 10
         speed = -1
         hover = False
-
         moving_boxes = Box(self.size)
 
         while game:
@@ -157,6 +156,7 @@ class Game:
 
                 if event.type == MOUSEBUTTONDOWN:
                     if event.button == 1:
+                        self.buttonclick.play()
                         if hover:
                             self.reset_game()
                             game = False
@@ -186,7 +186,7 @@ class Game:
             else:
                 self.high_score = max(self.high_score, self.score)
 
-                food_captured = self.player.display(self.screen, self.food.rect, self.platforms)
+                food_captured = self.player.display(self.screen, self.food.rect, self.ballbounce, self.platforms)
 
                 if food_captured:
                     self.food.get_pos()
@@ -224,6 +224,7 @@ class Game:
                 if event.type == MOUSEBUTTONDOWN:
                     if not self.instruction:
                         if event.button == 1:
+                            self.burst.play()
                             self.player.shoot = True
                             self.player.shooting_angle = -self.player.angle
                     else:

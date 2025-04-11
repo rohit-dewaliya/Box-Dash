@@ -39,7 +39,7 @@ class Player:
         self.y -= offset[1]
         self.set_pos()
 
-    def shoot_player(self, platforms):
+    def shoot_player(self, ballbounce, platforms):
         coors = self.find_coordinates(self.shooting_speed, math.radians(self.shooting_angle))
         new_x = self.x + coors[0]
         new_y = self.y + coors[1]
@@ -50,6 +50,7 @@ class Player:
 
         for platform in platforms:
             if test_rect.colliderect(platform):
+                ballbounce.play()
                 collision_found = True
 
                 dx = test_rect.centerx - platform.centerx
@@ -97,7 +98,7 @@ class Player:
                 new_trail.append([x, y, alpha - self.trail_fade_speed])
         self.trail = new_trail
 
-    def display(self, display, food, platforms = []):
+    def display(self, display, food, ballbounce, platforms = []):
         self.draw_trail(display)
 
         pygame.draw.circle(display, (0, 0, 0), (self.x, self.y), self.radius + 1)
@@ -107,7 +108,7 @@ class Player:
             self.blit_center(display)
 
         if self.shoot:
-            self.shoot_player(platforms)
+            self.shoot_player(ballbounce, platforms)
             if self.rect.colliderect(food):
                 return True
 
