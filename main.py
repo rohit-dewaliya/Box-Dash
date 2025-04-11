@@ -10,6 +10,7 @@ from data.scripts.background import Background
 from data.scripts.food import Food
 from data.scripts.file_manager import read_json, write_json
 from data.scripts.enemy import Enemy
+from data.scripts.moving_box import Box
 
 pygame.init()
 pygame.mixer.init()
@@ -70,9 +71,11 @@ class Game:
         self.data = self.data.split('\n')
         self.instruction, self.high_score = eval(self.data[0]), eval(self.data[1])
 
-        self.game_over = False
+
 
     def reset_game(self):
+        self.game_over = False
+
         self.border = Border(self.size)
         self.food = Food(self.size)
         self.enemies = [
@@ -100,10 +103,16 @@ class Game:
         _x = 10
         speed = -1
         hover = False
+
+        moving_boxes = Box(self.size)
+
         while game:
             mouse_pos = pygame.mouse.get_pos()
 
             self.background.display(self.screen)
+
+            if moving_boxes.display(self.screen):
+                moving_boxes = Box(self.size)
 
             x = self.game_heading_1.get_width('Box Dash', 3)
 
@@ -183,9 +192,12 @@ class Game:
                     self.food.get_pos()
                     self.score += 1
 
-                    if self.score % 10 == 0:
+                    if self.score % 5 == 0:
                         for enemy in self.enemies:
                             enemy.speed += 1
+
+                    if self.score % 10 == 0:
+                        self.enemies.append(Enemy(self.size, self.border.height, self.border.offset))
 
                 self.food.display(self.screen)
 
