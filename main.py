@@ -9,6 +9,7 @@ from data.scripts.player import Player
 from data.scripts.background import Background
 from data.scripts.food import Food
 from data.scripts.file_manager import read_json, write_json
+from data.scripts.enemy import Enemy
 
 pygame.init()
 pygame.mixer.init()
@@ -54,8 +55,30 @@ class Game:
         self._game = True
         self.game_start = False
 
+        # Text----------------#
+        self.score_font = Font('small_font.png', (255, 255, 255), 4)
+        self.instructions_font = Font('small_font.png', (255, 255, 255), 3)
+        self.game_heading_1 = Font('large_font.png', (255, 255, 255), 10)
+        self.game_heading_2 = Font('large_font.png', (255, 0, 0), 10)
+        self.high_score_font = Font('large_font.png', (1, 0, 0), 7)
+        self.score_font = Font('small_font.png', (255, 255, 255), 6)
+        self.play_font = Font('small_font.png', (1, 0, 0), 4)
+
+        self.reset_game()
+
+        self.data = read_json('data.txt')
+        self.data = self.data.split('\n')
+        self.instruction, self.high_score = eval(self.data[0]), eval(self.data[1])
+
+        self.game_over = False
+
+    def reset_game(self):
         self.border = Border(self.size)
         self.food = Food(self.size)
+        self.enemies = [
+            Enemy(self.size, self.border.height, self.border.offset),
+            Enemy(self.size, self.border.height, self.border.offset),
+        ]
 
         self.background = Background()
 
@@ -66,26 +89,11 @@ class Game:
             self.border.left_rect
         ]
 
-        # Text----------------#
-        self.score_font = Font('small_font.png', (255, 255, 255), 4)
-        self.instructions_font = Font('small_font.png', (255, 255, 255), 3)
-        self.game_heading_1 = Font('large_font.png', (255, 255, 255), 10)
-        self.game_heading_2 = Font('large_font.png', (255, 0, 0), 10)
-        self.high_score_font = Font('large_font.png', (1, 0, 0), 7)
-        self.score_font = Font('small_font.png', (255, 255, 255), 6)
-        self.play_font = Font('small_font.png', (1, 0, 0), 4)
-
         self.score = 0
 
         radius = 10
         player_pos = [self.border.offset[0] + self.border.height + radius, self.size[1] // 2]
         self.player = Player(*player_pos, radius)
-
-        self.data = read_json('data.txt')
-        self.data = self.data.split('\n')
-        self.instruction, self.high_score = eval(self.data[0]), eval(self.data[1])
-
-        self.game_over = False
 
     def start_screen(self):
         game = True
@@ -141,6 +149,7 @@ class Game:
                 if event.type == MOUSEBUTTONDOWN:
                     if event.button == 1:
                         if hover:
+                            self.reset_game()
                             game = False
 
             pygame.display.update()
@@ -174,12 +183,20 @@ class Game:
                     self.food.get_pos()
                     self.score += 1
 
+                    if self.score % 10 == 0:
+                        for enemy in self.enemies:
+                            enemy.speed += 1
+
                 self.food.display(self.screen)
 
                 self.score_font.display_fonts(self.screen, f'Score: {self.score}', [10, 10], 2)
 
                 if self.game_over:
                     self.start_screen()
+
+                for enemy in self.enemies:
+                    if enemy.display(self.screen, self.player.rect):
+                        self.game_over = True
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -207,5 +224,4 @@ if __name__ == "__main__":
     game = Game()
     game.start_screen()
     game.main()
-    print(game.instruction, game.high_score)
-    write_json('data.txt', f'True\n{game.high_score}')
+    write_json('data.txt', f'False\n{game.high_score}')
