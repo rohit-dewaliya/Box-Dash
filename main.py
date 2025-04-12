@@ -1,9 +1,10 @@
 import pygame
+import random
 from pygame.locals import *
 
 from data.scripts.clock import Clock
 from data.scripts.font import Font
-from data.scripts.image_functions import load_image, scale_image_ratio, scale_image_size
+from data.scripts.image_functions import load_image, scale_image_size
 from data.scripts.border import Border
 from data.scripts.player import Player
 from data.scripts.background import Background
@@ -11,6 +12,7 @@ from data.scripts.food import Food
 from data.scripts.file_manager import read_json, write_json
 from data.scripts.enemy import Enemy
 from data.scripts.moving_box import Box
+from data.scripts.partices import *
 
 pygame.init()
 pygame.mixer.init()
@@ -47,6 +49,7 @@ class Game:
         self.burst = load_sound('burst.wav')
         self.buttonclick = load_sound('buttonclick.wav')
         self.ballbounce = load_sound('ballbounce.wav')
+        self.rocksmash = load_sound('rocksmash.wav')
 
         pygame.mixer.music.load('data/sounds/background music.mp3')
         pygame.mixer.music.play(-1)
@@ -97,6 +100,10 @@ class Game:
         radius = 10
         player_pos = [self.border.offset[0] + self.border.height + radius, self.size[1] // 2]
         self.player = Player(*player_pos, radius)
+
+        # Particles--------------------------------------------------------#
+        load_particle_images('data/images/particles/')
+        self.particles = []
 
     def start_screen(self):
         game = True
@@ -189,6 +196,13 @@ class Game:
                 food_captured = self.player.display(self.screen, self.food.rect, self.ballbounce, self.platforms)
 
                 if food_captured:
+                    self.rocksmash.play()
+                    for _ in range(40):
+                        self.particles.append(
+                            Particle([self.food.x + random.randint(-10, 6), self.food.y + random.randint(0, 20)], 'p', [
+                                random.randint(-2, 2), random.randint(-2, 2)], 0.5, 0, random.choice([(255, 0, 255),
+                                                                                                  (255, 0, 0)]), True))
+
                     self.food.get_pos()
                     self.score += 1
 
@@ -209,6 +223,13 @@ class Game:
                 for enemy in self.enemies:
                     if enemy.display(self.screen, self.player.rect):
                         self.game_over = True
+
+                for i, particle in sorted(enumerate(self.particles), reverse=True):
+                    alive = particle.update(1)
+                    if not alive:
+                        self.particles.pop(i)
+                    else:
+                        particle.draw(self.screen, [0, 0])
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -232,6 +253,7 @@ class Game:
 
             pygame.display.update()
             self.clock.tick()
+
 
 if __name__ == "__main__":
     game = Game()
